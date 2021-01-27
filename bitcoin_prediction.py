@@ -33,7 +33,6 @@ def get_bars(symbol="BTCUSDT", interval="1m", limit="1500"):
 
 
 
-{"_id":"binance.BNB-USDT-1","trade_id":"1","time":1581321687404,"size":10,"price":25.07,"side":"buy","id":"binance.BNB-USDT-1","selector":"binance.BNB-USDT"}
 
 
 if __name__=="__main__":
