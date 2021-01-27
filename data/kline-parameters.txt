@@ -10,7 +10,7 @@ kline parameters- one sample:
  "volume": "2.34332600",
  "closeTime": 1517219339999,
  "quoteAssetVolume": "26742.66371042",
- "trades": 65, "takerBaseAssetVolume":
- "0.39713600", "takerQuoteAssetVolume":
- "4533.10589441",
+ "trades": 65,
+ "takerBaseAssetVolume":"0.39713600",
+ "takerQuoteAssetVolume":"4533.10589441",
  "ignored": "0" }
