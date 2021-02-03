@@ -15,10 +15,27 @@ from numpy import linalg as LA
 
 def main():
     result=read_data()
+    print(result.shape)
+    """constant define"""
+    openTime=0
+    openPrice=1
+    highPrice=2
+    lowPrice=3
+    closePrice=4
+    volume=5
+    closeTime=6
+    quoteAV=7
+    trades=8
+    takerBaseAV=9
+    takerQuoteAV=10
 
 
 
-def read_data(months=2):
+
+def read_data(months=20):
+    """reading the Bitcoin to Dollar of the last #months (maximum=21)"""
+    if months>20:
+        months=20
     const="data/BTCTUSD-1m-"
     year=2020
     month=10
@@ -27,6 +44,7 @@ def read_data(months=2):
     reader = csv.reader(open("data/BTCTUSD-1m-2020-10.csv", "rt"), delimiter=",")
     temp = list(reader)
     result = np.array(temp).astype("float")
+    print("append file "+ "data/BTCTUSD-1m-2020-10.csv")
     while(count<months):
         month-=1
         if(month<1):
@@ -44,7 +62,8 @@ def read_data(months=2):
         result=np.vstack((res,result))
         count+=1
         print("append file",s)
-    return result
+
+    return result[:,0:-1] ## delete the last column it is useless
 
 
 def get_bars(symbol="BTCUSDT", interval="1m", limit="1500"):
