@@ -44,7 +44,7 @@ def main():
     miss=0
     y_test=list(y_test)
     for i in range(len(y_test)):
-        t=predict(lg,x_test[[i],:],0.95)
+        t=predict(lg,x_test[[i],:],0.75)
         if(t==1):
             if(y_test[i]==1):
                 hit+=1
@@ -75,15 +75,13 @@ def create_X(X):
     print(X.shape)
     return X
 
-def create_Y(X,value,max_itter=100000000,logistic=True):
+def create_Y(X,value,max_itter=100000000):
     m,n=X.shape
     Y=np.zeros(m)
     for i in range(m):
         y,minutes=define_row_y(X,i,value,max_itter)
-        if(logistic):
-            Y[i]=y
-        else:
-            Y[i]=y*(np.exp(1/(minutes+1))-1)
+        Y[i]=y
+
     return Y
 
 def define_row_y(X,row,value,max_itter=100000000):
