@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 import seaborn as sn
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import scale
+from sklearn.linear_model import LinearRegression
 
 """constant define"""
 openTime = 0
@@ -29,35 +30,61 @@ def main():
     data=read_data()
     print(data.shape)
 
-    Y,minutes_to_change=create_Y(data,0.0005)
+    Y=create_Y(data,0.002,5)
     #X=np.hstack((data,minutes_to_change))
     X=create_X(data)
     x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=21)
-    logistic_regression = LogisticRegression(solver='lbfgs',C=100,multi_class='auto',max_iter=300)
+    logistic_regression = LogisticRegression(solver='lbfgs',C=50,multi_class='auto',max_iter=300)
     lg=logistic_regression.fit(x_train,y_train)
 
     prediction=lg.predict(x_test)
     confusion_matrix_show(prediction,y_test,"prediction accuracy: ")
+    
+    hit=0
+    miss=0
+    y_test=list(y_test)
+    for i in range(len(y_test)):
+        t=predict(lg,x_test[[i],:],0.95)
+        if(t==1):
+            if(y_test[i]==1):
+                hit+=1
+            else:
+                miss+=1
+        if(t==-1):
+            if (y_test[i] == -1):
+                hit += 1
+            else:
+                miss += 1
+
+    print('accuracy: ',hit/(hit+miss))
+    print('hit: ',hit)
+    print('miss: ',miss)
+    print('total: ' ,hit+miss)
+    print('chances: ',x_test.shape[0])
+    print('attack ratio: ',(hit+miss)/x_test.shape[0])
 
 def create_X(X):
-    X[highPrice]=X[highPrice]-X[openPrice]
-    X[lowPrice]=X[lowPrice]-X[openPrice]
-    X[openPrice]=X[closePrice]-X[openPrice]
+    X[:,closePrice]=X[:,closePrice]/X[:,openPrice]
+    X[:,highPrice]=X[:,highPrice]/X[:,openPrice]
+    X[:,lowPrice]=X[:,lowPrice]/X[:,openPrice]
+#    X[:,openTime]=np.roll(X[:,highPrice],1)
+ #   X[:, closeTime] = np.roll(X[:, lowPrice], 1)
 
-    X=np.delete(X,[openTime,closeTime,closePrice,takerQuoteAV,takerBaseAV,quoteAV,volume],1)
+    X=np.delete(X,[closeTime,openTime,openPrice,takerQuoteAV,takerBaseAV,quoteAV,volume],1)
     X=scale(X,axis=0)
     print(X.shape)
     return X
 
-def create_Y(X,value):
+def create_Y(X,value,max_itter=100000000,logistic=True):
     m,n=X.shape
     Y=np.zeros(m)
-    minutes_to_change=np.zeros((m,1))
     for i in range(m):
-        y,minutes=define_row_y(X,i,value)
-        Y[i]=y
-        minutes_to_change[i,0]=minutes
-    return Y,minutes_to_change
+        y,minutes=define_row_y(X,i,value,max_itter)
+        if(logistic):
+            Y[i]=y
+        else:
+            Y[i]=y*(np.exp(1/(minutes+1))-1)
+    return Y
 
 def define_row_y(X,row,value,max_itter=100000000):
     y_val=X[row,openPrice]
@@ -74,13 +101,28 @@ def define_row_y(X,row,value,max_itter=100000000):
         if(temp<1-value):
             #print("row: " + str(row) + " value changed in: " + str(i) + " -1")
             return -1,itter
-        if(itter>max_itter):
-            return 0
         itter+=1
         i+=1
     return 0,itter
 
 
+def predict(model,X,percentage=0.5):
+    prediciton=model.predict_proba(X)
+    if(X.shape[0]==1):
+        if(prediciton[0,0]>percentage):
+            return -1
+        if(prediciton[0,2]>percentage):
+            return 1
+        return 0
+    pred_list=[]
+    for i in range(X.shape[0]):
+        if (prediciton[0, 0] > percentage):
+            pred_list.append( -1)
+        if (prediciton[0, 2] > percentage):
+            pred_list.append( 1)
+        else:
+            pred_list.append(0)
+    return pred_list
 
 def read_data(months=20):
     """reading the Bitcoin to Dollar of the last #months (maximum=21)"""
