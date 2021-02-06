@@ -11,6 +11,7 @@ import seaborn as sn
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import scale
 from sklearn.linear_model import LinearRegression
+import pickle
 
 """constant define"""
 openTime = 0
@@ -33,7 +34,7 @@ def main():
     Y=create_Y(data,0.002,5)
     #X=np.hstack((data,minutes_to_change))
     X=create_X(data)
-    x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=21)
+    x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=43)
     logistic_regression = LogisticRegression(solver='lbfgs',C=50,multi_class='auto',max_iter=300)
     lg=logistic_regression.fit(x_train,y_train)
 
@@ -43,14 +44,21 @@ def main():
     hit=0
     miss=0
     y_test=list(y_test)
+    pred_list=[]
+    actual_list=[]
     for i in range(len(y_test)):
         t=predict(lg,x_test[[i],:],0.75)
         if(t==1):
+            pred_list.append(1)
+            actual_list.append(y_test[i])
             if(y_test[i]==1):
                 hit+=1
+
             else:
                 miss+=1
         if(t==-1):
+            pred_list.append(-1)
+            actual_list.append(y_test[i])
             if (y_test[i] == -1):
                 hit += 1
             else:
@@ -62,13 +70,16 @@ def main():
     print('total: ' ,hit+miss)
     print('chances: ',x_test.shape[0])
     print('attack ratio: ',(hit+miss)/x_test.shape[0])
+    confusion_matrix_show(pred_list,actual_list,"prediction accuracy: ")
+
+    return lg
 
 def create_X(X):
     X[:,closePrice]=X[:,closePrice]/X[:,openPrice]
     X[:,highPrice]=X[:,highPrice]/X[:,openPrice]
     X[:,lowPrice]=X[:,lowPrice]/X[:,openPrice]
-#    X[:,openTime]=np.roll(X[:,highPrice],1)
- #   X[:, closeTime] = np.roll(X[:, lowPrice], 1)
+    #X[:,openTime]=np.roll(X[:,highPrice],1)
+    #X[:, closeTime] = np.roll(X[:, lowPrice], 1)
 
     X=np.delete(X,[closeTime,openTime,openPrice,takerQuoteAV,takerBaseAV,quoteAV,volume],1)
     X=scale(X,axis=0)
