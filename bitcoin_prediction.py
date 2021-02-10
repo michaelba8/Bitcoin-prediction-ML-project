@@ -9,12 +9,8 @@ import sklearn.model_selection as ms
 from sklearn.linear_model import LogisticRegression
 import seaborn as sn
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import scale
-from sklearn.linear_model import LinearRegression
-import pickle
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.datasets import make_classification
+from sklearn.neural_network import MLPClassifier
 
 """constant define"""
 openTime = 0
@@ -31,18 +27,14 @@ takerQuoteAV = 10
 ignored=11
 
 def main():
-    data=read_data()
-    Y=create_Y(data,0.002,5)
-    X,scaler=create_X(data)
-    x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=56)
-    #c,acc=best_logistic_reg(x_train,x_test,y_train,y_test)
-    #print(mutual_info(X,Y))
+    lg,scaler,x_test,y_test=neural_network(debug=True)
+    #lg,scaler,x_test,y_test=create_model(debug=True)
 
-    logistic_regression = LogisticRegression(solver='lbfgs',C=10**(-4),multi_class='auto',max_iter=300)
-    lg=logistic_regression.fit(x_train,y_train)
+
+
     prediction=lg.predict(x_test)
     confusion_matrix_show(prediction,y_test,"prediction accuracy: ")
-
+    # c,acc=best_logistic_reg(x_train,x_test,y_train,y_test)
     hit=0
     miss=0
     y_test=list(y_test)
@@ -72,25 +64,34 @@ def main():
     print('total: ' ,hit+miss)
     print('chances: ',x_test.shape[0])
     print('attack ratio: ',(hit+miss)/x_test.shape[0])
-    confusion_matrix_show(pred_list,actual_list,"prediction accuracy: ")
+    confusion_matrix_show(pred_list,actual_list,"Neural Network, prediction accuracy: ")
 
 
-def adaboost(value_change=0.002,max_minutes=5):
-    data=read_data()
-    Y=create_Y(data,value_change,max_minutes)
-    X,scaler=create_X(np.copy(data))
-
-
-def create_model(value_change=0.002,max_minutes=5):
+def neural_network(value_change=0.002,max_minutes=5,debug=False):
     data=read_data()
     Y=create_Y(data,value_change,max_minutes)
     X,scaler=create_X(np.copy(data))
     x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=56)
-    logistic_regression = LogisticRegression(solver='lbfgs',C=100,multi_class='auto',max_iter=300)
+    clf = MLPClassifier(solver='lbfgs', alpha=1e-05,hidden_layer_sizes = (14, 3), random_state = 1)
+    clf.fit(x_train, y_train)
+    if(debug):
+        return clf, scaler,x_test,y_test
+    return clf,scaler
+
+
+def create_model(value_change=0.002,max_minutes=5,debug=False):
+    data=read_data()
+    Y=create_Y(data,value_change,max_minutes)
+    X,scaler=create_X(np.copy(data))
+    x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=56)
+    logistic_regression = LogisticRegression(solver='lbfgs',C=10,multi_class='auto',max_iter=300)
     lg=logistic_regression.fit(x_train,y_train)
+    if (debug):
+        return lg, scaler, x_test, y_test
     return lg,scaler
 
 def create_X(X):
+
     X[:,closePrice]=X[:,closePrice]/X[:,openPrice]
     X[:,highPrice]=X[:,highPrice]/X[:,openPrice]
     X[:,lowPrice]=X[:,lowPrice]/X[:,openPrice]

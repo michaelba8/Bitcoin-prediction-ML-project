@@ -27,7 +27,7 @@ def main():
     data=np.array(data,dtype='float64')
     value_change=0.002
     invest=1000
-    model,scaler=BP.create_model(value_change=value_change,max_minutes=5)
+    model,scaler=BP.neural_network(value_change=value_change,max_minutes=5)
     X=BP.setX(np.copy(data),scaler)
     is_in=False
     tries=0
