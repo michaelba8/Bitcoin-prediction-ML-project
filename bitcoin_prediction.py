@@ -41,7 +41,7 @@ def main():
     pred_list=[]
     actual_list=[]
     for i in range(len(y_test)):
-        t=predict(lg,x_test[[i],:],0.62)
+        t=predict(lg,x_test[[i],:],0.95)
         if(t==1):
             pred_list.append(1)
             actual_list.append(y_test[i])
@@ -64,7 +64,8 @@ def main():
     print('total: ' ,hit+miss)
     print('chances: ',x_test.shape[0])
     print('attack ratio: ',(hit+miss)/x_test.shape[0])
-    confusion_matrix_show(pred_list,actual_list,"Neural Network, prediction accuracy: ")
+    confusion_matrix_show(pred_list,actual_list,"model accuracy: ")
+
 
 
 def neural_network(value_change=0.002,max_minutes=5,debug=False):
@@ -98,8 +99,9 @@ def create_X(X):
     X=np.delete(X,[closeTime,openTime,openPrice,takerQuoteAV,takerBaseAV,quoteAV,volume,ignored,trades],1)
     #X = np.delete(X, [closeTime, openTime, openPrice, ignored], 1)
     scaler = StandardScaler()
-    X=scaler.fit_transform(X)
-    return X,scaler
+    X = scaler.fit_transform(X)
+    return X, scaler
+
 
 def create_Y(X,value,max_itter=100000000):
     m,n=X.shape

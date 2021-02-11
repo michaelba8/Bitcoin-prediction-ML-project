@@ -36,7 +36,7 @@ def main():
     short=0
     for i in range(data.shape[0]):
         if(not is_in):
-            prediction=BP.predict(model,X[[i],:],0.95)
+            prediction=BP.predict(model,X[[i],:],0.99)
             if(prediction==0):
                 continue
 
