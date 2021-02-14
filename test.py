@@ -82,7 +82,6 @@ def main():
 
 
 
-
 def get_bars(symbol="BTCUSDT", interval="1m", limit="1500"):
     url = 'https://fapi.binance.com/fapi/v1/klines' + '?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit
     data = json.loads(requests.get(url).text)

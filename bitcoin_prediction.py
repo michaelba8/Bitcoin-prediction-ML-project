@@ -27,7 +27,13 @@ takerQuoteAV = 10
 ignored=11
 
 def main():
-    lg,scaler,x_test,y_test=neural_network(debug=True)
+    x=most_significant_features()
+    l=[]
+    for i in range(len(x)):
+        l.append(x[i][0])
+    print(l)
+    return
+    #lg,scaler,x_test,y_test=neural_network(debug=True)
     #lg,scaler,x_test,y_test=create_model(debug=True)
 
 
@@ -68,7 +74,51 @@ def main():
 
 
 
+
+def most_significant_features():
+    """return a list of the most significant features"""
+    features = ['open_time',
+               'open', 'high', 'low', 'close', 'volume',
+               'close_time', 'qav', 'num_trades',
+               'taker_base_vol', 'taker_quote_vol', 'ignore']
+    costum_features=['high_ratio','low_ratio','close_ratio']
+    data=read_data(months=10)
+    Y=create_Y(data,0.002,5)
+    most_significant=[]
+    for i in range(len(features)):
+        feature=features[i]
+        logistic_regression = LogisticRegression(solver='lbfgs', C=10, multi_class='auto', max_iter=300)
+        temp=np.array(data[:,[i]])
+        x_train, x_test, y_train, y_test = ms.train_test_split(temp, Y, test_size=0.1, random_state=56)
+        lg = logistic_regression.fit(x_train, y_train)
+        prediction=lg.predict(x_test)
+        acc = metrics.accuracy_score(y_test, prediction)
+        most_significant.append((feature,acc))
+
+    data[:,closePrice]=data[:,closePrice]/data[:,openPrice]
+    data[:,highPrice]=data[:,highPrice]/data[:,openPrice]
+    data[:,lowPrice]=data[:,lowPrice]/data[:,openPrice]
+    data=np.delete(data,[closeTime,openTime,openPrice,takerQuoteAV,takerBaseAV,quoteAV,volume,ignored,trades],1)
+    for i in range(len(costum_features)):
+        feature=costum_features[i]
+        logistic_regression = LogisticRegression(solver='lbfgs', C=10, multi_class='auto', max_iter=300)
+        temp=np.array(data[:,[i]])
+        x_train, x_test, y_train, y_test = ms.train_test_split(temp, Y, test_size=0.1, random_state=56)
+        lg = logistic_regression.fit(x_train, y_train)
+        prediction=lg.predict(x_test)
+        t1=prediction[prediction!=0]
+        t2=y_test[prediction!=0]
+        acc = metrics.accuracy_score(y_test, prediction)
+        most_significant.append((feature,acc))
+    most_significant.sort(key=lambda tup: tup[1],reverse=True)
+
+    return most_significant
+
+
 def neural_network(value_change=0.002,max_minutes=5,debug=False):
+    """creating model based on neural network, return the scaler as well
+        runtime=1-3 minutes
+    """
     data=read_data()
     Y=create_Y(data,value_change,max_minutes)
     X,scaler=create_X(np.copy(data))
@@ -81,6 +131,7 @@ def neural_network(value_change=0.002,max_minutes=5,debug=False):
 
 
 def create_model(value_change=0.002,max_minutes=5,debug=False):
+    """creating logistic regression model and return the scaler as well"""
     data=read_data()
     Y=create_Y(data,value_change,max_minutes)
     X,scaler=create_X(np.copy(data))
@@ -92,7 +143,12 @@ def create_model(value_change=0.002,max_minutes=5,debug=False):
     return lg,scaler
 
 def create_X(X):
-
+    """
+    :param X: the raw data
+    :return: matrix X set for Machine Learning use
+        delete most of the features, because they cause overfitting, and change create 3 new features
+        the new features are the ratios between the max,min,open,close values of the specific minute (X[i]).
+    """
     X[:,closePrice]=X[:,closePrice]/X[:,openPrice]
     X[:,highPrice]=X[:,highPrice]/X[:,openPrice]
     X[:,lowPrice]=X[:,lowPrice]/X[:,openPrice]
@@ -103,7 +159,14 @@ def create_X(X):
     return X, scaler
 
 
-def create_Y(X,value,max_itter=100000000):
+def create_Y(X,value=0.002,max_itter=100000000):
+    """
+    creating the vector Y,
+        classes (Y[i]):
+             1: increase of value percents from the #i minute of matrix X
+            -1: decrease of value percents from the #i minute of matrix X
+             0: no change of value percents from the #i minute of matrix X after #max_itter minutes
+    """
     m,n=X.shape
     Y=np.zeros(m)
     for i in range(m):
@@ -113,6 +176,7 @@ def create_Y(X,value,max_itter=100000000):
     return Y
 
 def define_row_y(X,row,value,max_itter=100000000):
+    """helper function"""
     y_val=X[row,closePrice]
     i=row
     itter=0
@@ -130,6 +194,7 @@ def define_row_y(X,row,value,max_itter=100000000):
     return 0,itter
 
 def setX(X,scaler):
+    """get X and scaler as an input, and return matrix/vector X ready for use in the models of the library """
     X=np.copy(X)
     X[:,closePrice]=X[:,closePrice]/X[:,openPrice]
     X[:,highPrice]=X[:,highPrice]/X[:,openPrice]
@@ -140,6 +205,7 @@ def setX(X,scaler):
     return X
 
 def predict(model,X,percentage=0.5):
+    """prediction with custom probability"""
     if(percentage>=1 or percentage<0.35):
         percentage=0.5
     prediciton=model.predict_proba(X)
