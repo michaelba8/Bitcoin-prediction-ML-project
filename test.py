@@ -1,98 +1,30 @@
-import bitcoin_prediction as BP
-import json
-import requests
-import pandas as pd
-import sys
-import datetime as dt
+import bitcoin_prediction as bp
 import numpy as np
+import sklearn.model_selection as ms
 
-
-
-openTime = 0
-openPrice = 1
-highPrice = 2
-lowPrice = 3
-closePrice = 4
-volume = 5
-closeTime = 6
-quoteAV = 7
-trades = 8
-takerBaseAV = 9
-takerQuoteAV = 10
-ignored=11
 
 def main():
-    df=get_bars()
-    data=df.to_numpy()
-    data=np.array(data,dtype='float64')
-    value_change=0.002
-    invest=1000
-    model,scaler=BP.neural_network(value_change=value_change,max_minutes=5)
-    X=BP.setX(np.copy(data),scaler)
-    is_in=False
-    tries=0
-    wins=0
-    long=0
-    short=0
-    for i in range(data.shape[0]):
-        if(not is_in):
-            prediction=BP.predict(model,X[[i],:],0.99)
-            if(prediction==0):
-                continue
+    """
+    Tester for the module bitcoin_prediction.py
+    the test code is not the most efficient,
+    because every function designed to be self-sufficient so there are duplicate actions such as reading the data.
 
-            btd=data[i,closePrice]
-            dtb=1/btd
-            position=invest*dtb
-            is_in=True
-            print('buy ',str(position),'bitcoin for ',invest,'prediction: ',prediction, 'value: ',btd)
-            tries+=1
-        else:
-            high=data[i,highPrice]/btd
-            low=data[i,lowPrice]/btd
-            if(high>1+value_change):
-                if(prediction==1):
-                    invest=position*data[i,highPrice]
-                    wins+=1
-                    long+=1
-                else:
-                    invest=position*(btd**2/data[i,highPrice])
-                print('out- position: ',str(position),'invest: ',str(invest),'value before/after: ',btd,data[i,highPrice])
-                is_in=False
-                continue
-            if(low<1-value_change):
-                if(prediction==-1):
-                    invest=position*(btd**2/data[i,lowPrice])
-                    print('out- position: ',str(position),'invest: ',str(invest),'value before/after: ',btd,data[i,lowPrice])
-                    wins+=1
-                    short+=1
-                else:
-                    invest=position*data[i,lowPrice]
-                    print('out- position: ',str(position),'invest: ',str(invest),'value before/after: ',btd,data[i,lowPrice])
-                print()
-                is_in = False
-                continue
+    """
+    lr_model,lr_scaler,x_test1,y_test1=bp.create_logistic_regression(debug=True)
+    nn_model,nn_scaler,x_test2,y_test2=bp.neural_network(debug=True)
+    data = bp.read_data()
+    Y = bp.create_Y(data)
+    X, scaler = bp.create_X(np.copy(data))
+    x_train, x_test, y_train, y_test = ms.train_test_split(X, Y, test_size=0.1, random_state=56)
 
-    print (invest)
-    print('wins: ',wins)
-    print('loses: ',tries-wins)
-    print('short: ',short)
-    print('long: ',long)
+    print('results:\n')
+    bp.custom_accuracy_test(lr_model, x_test1, y_test1, probability=0.62, title='Logistic Regression custom accuracy: ')
+    bp.custom_accuracy_test(nn_model, x_test2, y_test2, probability=0.62, title='Neural Network custom accuracy: ')
+    print('most significant features: ', bp.most_significant_features(data))
+    print('\nC optimisation for logistic regression:')
+    bp.best_logistic_reg(x_train,x_test,y_train,y_test)
 
 
-
-
-
-def get_bars(symbol="BTCUSDT", interval="1m", limit="1500"):
-    url = 'https://fapi.binance.com/fapi/v1/klines' + '?symbol=' + symbol + '&interval=' + interval + '&limit=' + limit
-    data = json.loads(requests.get(url).text)
-    df = pd.DataFrame(data)
-    df.columns = ['open_time',
-                  'o', 'h', 'l', 'c', 'v',
-                  'close_time', 'qav', 'num_trades',
-                  'taker_base_vol', 'taker_quote_vol', 'ignore']
-    df.index = [dt.datetime.fromtimestamp(x / 1000.0) for x in df.close_time]
-    print(df)
-    return df
 
 if __name__=='__main__':
     main()

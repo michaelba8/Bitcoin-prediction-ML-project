@@ -27,27 +27,36 @@ takerQuoteAV = 10
 ignored=11
 
 def main():
-    x=most_significant_features()
-    l=[]
-    for i in range(len(x)):
-        l.append(x[i][0])
-    print(l)
-    return
-    #lg,scaler,x_test,y_test=neural_network(debug=True)
-    #lg,scaler,x_test,y_test=create_model(debug=True)
+    """
+    Module Bitcoin Prediction, functions:
+            custom_accuracy_test(model,x_test,y_test,probability=0.62,title='model accuracy: ')
+            def most_significant_features(data=None)
+            neural_network(value_change=0.002,max_minutes=5,debug=False)
+            create_logistic_regression(value_change=0.002,max_minutes=5,debug=False)
+            create_X(X)
+            create_Y(X,value=0.002,max_itter=5)
+            setX(X,scaler)
+            predict(model,X,percentage=0.5)
+            read_data(months=20)
+            best_logistic_reg(x_train,x_test,y_train,y_test,noC=False)
+            mutual_info(x,y)
+    for more details for each function use: function.__doc__
+    """
+    print(main.__doc__)
 
 
 
-    prediction=lg.predict(x_test)
-    confusion_matrix_show(prediction,y_test,"prediction accuracy: ")
-    # c,acc=best_logistic_reg(x_train,x_test,y_train,y_test)
+def custom_accuracy_test(model,x_test,y_test,probability=0.62,title='model accuracy: '):
+    """custom accuracy test, testing only the prediction of the classes 1/-1 with probability as an input (default 62%)
+        #attack_ratio: how often the model prediction is 1 or -1 """
+
     hit=0
     miss=0
     y_test=list(y_test)
     pred_list=[]
     actual_list=[]
     for i in range(len(y_test)):
-        t=predict(lg,x_test[[i],:],0.95)
+        t=predict(model,x_test[[i],:],probability)
         if(t==1):
             pred_list.append(1)
             actual_list.append(y_test[i])
@@ -64,25 +73,26 @@ def main():
             else:
                 miss += 1
 
-    print('accuracy: ',hit/(hit+miss))
+    print(title,hit/(hit+miss))
     print('hit: ',hit)
     print('miss: ',miss)
     print('total: ' ,hit+miss)
     print('chances: ',x_test.shape[0])
     print('attack ratio: ',(hit+miss)/x_test.shape[0])
-    confusion_matrix_show(pred_list,actual_list,"model accuracy: ")
+    print()
+    confusion_matrix_show(pred_list,actual_list,title)
 
-
-
-
-def most_significant_features():
+def most_significant_features(data=None):
     """return a list of the most significant features"""
     features = ['open_time',
                'open', 'high', 'low', 'close', 'volume',
                'close_time', 'qav', 'num_trades',
                'taker_base_vol', 'taker_quote_vol', 'ignore']
     costum_features=['high_ratio','low_ratio','close_ratio']
-    data=read_data(months=10)
+    if(isinstance(data,np.ndarray)):
+        data = np.copy(data)
+    else:
+        data = read_data(months=10)
     Y=create_Y(data,0.002,5)
     most_significant=[]
     for i in range(len(features)):
@@ -111,8 +121,10 @@ def most_significant_features():
         acc = metrics.accuracy_score(y_test, prediction)
         most_significant.append((feature,acc))
     most_significant.sort(key=lambda tup: tup[1],reverse=True)
-
-    return most_significant
+    result=[]
+    for tup in most_significant:
+        result.append(tup[0])
+    return result
 
 
 def neural_network(value_change=0.002,max_minutes=5,debug=False):
@@ -130,7 +142,7 @@ def neural_network(value_change=0.002,max_minutes=5,debug=False):
     return clf,scaler
 
 
-def create_model(value_change=0.002,max_minutes=5,debug=False):
+def create_logistic_regression(value_change=0.002,max_minutes=5,debug=False):
     """creating logistic regression model and return the scaler as well"""
     data=read_data()
     Y=create_Y(data,value_change,max_minutes)
@@ -159,7 +171,7 @@ def create_X(X):
     return X, scaler
 
 
-def create_Y(X,value=0.002,max_itter=100000000):
+def create_Y(X,value=0.002,max_itter=5):
     """
     creating the vector Y,
         classes (Y[i]):
@@ -256,6 +268,7 @@ def read_data(months=20):
         count+=1
         print("append file",s)
 
+    print("read the data successfully ")
     return result
 
 
@@ -297,13 +310,12 @@ def best_logistic_reg(x_train,x_test,y_train,y_test,noC=False):
         c=1
         itter=1
     for i in range(itter):
-        lg = LogisticRegression(max_iter=200,penalty='l2', C=c ,multi_class='auto',solver='lbfgs')
+        lg = LogisticRegression(solver='lbfgs', C=c, multi_class='auto', max_iter=300)
         lg.fit(x_train, y_train)
         result=lg.predict(x_test)
         accuracy=metrics.accuracy_score(y_test,result)
         Cs.append(c)
         Acc.append(accuracy)
-        #print("c=",c," accuracy=",accuracy)
         if(accuracy>=max_acc):
             best_c=c
             max_acc=accuracy
@@ -343,7 +355,6 @@ def mutual_info(x,y):
                 temp*=xy_prob
                 sum+=temp
         most_imp[i]=sum
-    #return most_imp
     sort_list=[]
     for i in range(len(most_imp)):
         index=np.argmax(most_imp)
