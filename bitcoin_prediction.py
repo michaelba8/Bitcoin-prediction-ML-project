@@ -30,7 +30,7 @@ def main():
     """
     Module Bitcoin Prediction, functions:
             custom_accuracy_test(model,x_test,y_test,probability=0.62,title='model accuracy: ')
-            def most_significant_features(data=None)
+            most_significant_features(data=None)
             neural_network(value_change=0.002,max_minutes=5,debug=False)
             create_logistic_regression(value_change=0.002,max_minutes=5,debug=False)
             create_X(X)
